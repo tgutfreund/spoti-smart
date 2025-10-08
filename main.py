@@ -6,8 +6,6 @@ import sys
 from src.spotify_client import SpotifyClient
 
 def main():
-    print("✅ main.py is running")
-
     # Set up argument parsing
     parser = argparse.ArgumentParser(description="SpotiSmart: Smart Playlist Generator")
     parser.add_argument('command', choices=['login', 'test'], 
