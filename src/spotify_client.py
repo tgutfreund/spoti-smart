@@ -17,7 +17,8 @@ class SpotifyClient:
             "user-top-read",
             "user-library-read", 
             "playlist-modify-private",
-            "playlist-modify-public"
+            "playlist-modify-public",
+            "user-read-recently-played"
         ]
         
         self.sp = None
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     client = SpotifyClient()
     sp = client.authenticate()
     if sp:
-        tracks = client.get_user_top_tracks(limit=10)
+        tracks = client.get_user_top_tracks(limit=50, time_range='short_term')
         if tracks:
             print(f"\n🎵 Your top tracks:")
             for i, track in enumerate(tracks, 1):
