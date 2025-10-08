@@ -7,7 +7,7 @@ from src.spotify_client import SpotifyClient
 def main():
     # Set up argument parsing
     parser = argparse.ArgumentParser(description="SpotiSmart: Smart Playlist Generator")
-    parser.add_argument('command', choices=['login', 'test', 'analyze'], 
+    parser.add_argument('command', choices=['login', 'test'], 
                        help='Command to execute')
     args = parser.parse_args()
 
@@ -21,3 +21,20 @@ def main():
         else:
             print("❌ Login failed.")
             sys.exit(1)
+
+    elif args.command == 'test':
+        sp = client.authenticate()
+        if sp:
+            print("✅ Authentication successful!")
+            tracks = client.get_user_top_tracks(limit=10)
+            if tracks:
+                print(f"\n🎵 Your top tracks:")
+                for i, track in enumerate(tracks, 1):
+                    artists = ', '.join([artist['name'] for artist in track['artists']])
+                    print(f"{i}. {track['name']} by {artists}")
+            else:
+                print("❌ Failed to fetch top tracks.")
+        else:
+            print("❌ Authentication failed.")
+            sys.exit(1)
+
