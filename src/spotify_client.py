@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class SpotifyClient:
+    """A client to interact with the Spotify API"""
     def __init__(self):
         self.client_id = os.getenv('SPOTIFY_CLIENT_ID')
         self.client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
