@@ -8,7 +8,7 @@ from src.spotify_client import SpotifyClient
 def main():
     # Set up argument parsing
     parser = argparse.ArgumentParser(description="SpotiSmart: Smart Playlist Generator")
-    parser.add_argument('command', choices=['login', 'test'], 
+    parser.add_argument('command', choices=['login', 'test', 'analyze'], 
                        help='Command to execute')
     args = parser.parse_args()
 
@@ -38,6 +38,7 @@ def main():
         else:
             print("❌ Authentication failed.")
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

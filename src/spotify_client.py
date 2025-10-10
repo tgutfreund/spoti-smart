@@ -27,6 +27,7 @@ class SpotifyClient:
     def authenticate(self):
         """Authenticate and create a Spotify client"""
         try:
+            # Set up the OAuth manager
             auth_manager = SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
@@ -54,7 +55,7 @@ class SpotifyClient:
         except spotipy.SpotifyException:
             print("Token expired or invalid. Please re-authenticate.")
             return None
-
+        # Fetch top tracks
         try:
             results = self.sp.current_user_top_tracks(
                 limit=limit, 
@@ -64,6 +65,7 @@ class SpotifyClient:
         except Exception as e:
             print(f"Error fetching top tracks: {e}")
             return None
+        
   
 # Test the client
 if __name__ == "__main__":
