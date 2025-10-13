@@ -56,3 +56,33 @@ class SpotifyClient:
         except Exception as e:
             print(f"Error fetching top tracks: {e}")
             return None
+
+    def create_playlist(self, name, description=""):
+        """Creates a new private playlist for the current user."""
+        if not self.sp:
+            print("Client not authenticated.")
+            return None
+        try:
+            user_id = self.sp.current_user()['id']
+            playlist = self.sp.user_playlist_create(
+                user=user_id,
+                name=name,
+                public=False, 
+                description=description
+            )
+            print(f"Successfully created playlist: '{name}'")
+            return playlist['id']
+        except Exception as e:
+            print(f"Error creating playlist: {e}")
+            return None
+
+    def add_tracks_to_playlist(self, playlist_id, track_uris):
+        """Adds a list of tracks (by URI) to a playlist."""
+        if not self.sp or not track_uris:
+            print("Client not authenticated or no tracks to add.")
+            return
+        try:
+            self.sp.playlist_add_items(playlist_id, track_uris)
+            print(f"Successfully added {len(track_uris)} tracks to the playlist.")
+        except Exception as e:
+            print(f"Error adding tracks: {e}")
