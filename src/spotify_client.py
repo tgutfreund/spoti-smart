@@ -42,7 +42,7 @@ class SpotifyClient:
             print(f"Authentication failed: {e}")
             return None
     
-    def get_user_top_tracks(self, limit=10, time_range='short_term'):
+    def get_user_top_tracks(self, limit=10, time_range='long_term'):
         """Get user's top tracks"""
         if not self.sp:
             print("Client not authenticated. Please run authenticate() first.")
