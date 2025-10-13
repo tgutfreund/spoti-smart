@@ -42,7 +42,7 @@ class SpotifyClient:
             print(f"Authentication failed: {e}")
             return None
     
-    def get_user_top_tracks(self, limit=10, time_range='long_term'):
+    def get_user_top_tracks(self, limit=10, time_range='medium_term'):
         """Get user's top tracks"""
         if not self.sp:
             print("Client not authenticated. Please run authenticate() first.")
@@ -58,7 +58,7 @@ class SpotifyClient:
             return None
 
     def create_playlist(self, name, description=""):
-        """Creates a new private playlist for the current user."""
+        """Creates a new playlist for the current user."""
         if not self.sp:
             print("Client not authenticated.")
             return None
@@ -67,7 +67,7 @@ class SpotifyClient:
             playlist = self.sp.user_playlist_create(
                 user=user_id,
                 name=name,
-                public=False, 
+                public=True, 
                 description=description
             )
             print(f"Successfully created playlist: '{name}'")

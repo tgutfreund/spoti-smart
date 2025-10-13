@@ -28,7 +28,7 @@ class GeminiClient:
         Instructions:
         1. I will provide you with a list of tracks in the format "Song Name by Artist Name".
         2. I will also provide a user's request, for example, "a playlist for a rainy day" or "songs for a morning workout".
-        3. You must carefully select {num_songs} songs that best fit the user's request. The songs do not necessarily need to be from the provided list, it is more important to match the mood and only get inspiration from the top tracks if relevant.
+        3. You must carefully select {num_songs} songs that best fit the user's request. The songs do not necessarily need to be from the provided list, it is more important to match the mood and only get inspiration from the top tracks if relevant for the mood.
         4. Your response MUST be ONLY a comma-separated list of the exact song titles you have chosen ONLY! in the format - 'Song Name by Artist'. Do not add any introductory text, explanations, numbering, or quotation marks.
         5. Ensure that the songs you select are popular and widely recognized tracks that fit the mood or activity described in the user's request.
         6. Do not make up any song titles or artists. Only use real songs. Double check your work to ensure accuracy.

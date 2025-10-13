@@ -30,8 +30,8 @@ def main():
             sys.exit(1) # Exit if authentication fails
 
         # Get User's Top Tracks
-        print(f"Fetching your top {args.num_tracks} tracks...")
-        tracks = spotify_client.get_user_top_tracks(limit=args.num_tracks)
+        print(f"Fetching your top tracks...")
+        tracks = spotify_client.get_user_top_tracks(limit=50, time_range='medium_term')
         if not tracks:
             print("Could not fetch your top tracks. Exiting.")
             sys.exit(1)
