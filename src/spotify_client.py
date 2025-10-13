@@ -86,3 +86,24 @@ class SpotifyClient:
             print(f"Successfully added {len(track_uris)} tracks to the playlist.")
         except Exception as e:
             print(f"Error adding tracks: {e}")
+    # In src/spotify_client.py, add this new method to the SpotifyClient class
+
+    def search_for_track(self, song_name, artist_name):
+        """Searches for a track on Spotify and returns its URI."""
+        if not self.sp:
+            return None
+        try:
+            # Search query combining song name and artist name
+            query = f"track:{song_name} artist:{artist_name}"
+            results = self.sp.search(q=query, type='track', limit=1)
+            
+            items = results['tracks']['items']
+            if items:
+                # If a match is found, return the first track's URI
+                return items[0]['uri']
+            else:
+                print(f"Warning: Could not find '{song_name} by {artist_name}' on Spotify.")
+                return None
+        except Exception as e:
+            print(f"Error searching for track: {e}")
+            return None
