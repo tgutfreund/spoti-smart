@@ -29,7 +29,7 @@ class GeminiClient:
         1. I will provide you with a list of tracks in the format "Song Name by Artist Name".
         2. I will also provide a user's request, for example, "a playlist for a rainy day" or "songs for a morning workout".
         3. You must carefully select {num_songs} songs that best fit the user's request. Not necessarily all songs need to be from the provided list, but they should be similar in style or mood.
-        4. Your response MUST be ONLY a comma-separated list of the exact song titles you have chosen. Do not add any introductory text, explanations, numbering, or quotation marks.
+        4. Your response MUST be ONLY a comma-separated list of the exact song titles you have chosen in the format - 'Song Name by Artist'. Do not add any introductory text, explanations, numbering, or quotation marks.
 
         User Request: "{mood_prompt}"
         Track List: {track_list_str}
