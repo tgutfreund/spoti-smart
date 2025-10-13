@@ -13,7 +13,7 @@ class GeminiClient:
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
-    def generate_playlist_songs(self, mood_prompt, tracks):
+    def generate_playlist_songs(self, mood_prompt, tracks, num_songs=15):
         """
         Sends a curated prompt to the LLM to get a list of recommended songs.
         """
@@ -28,7 +28,7 @@ class GeminiClient:
         Instructions:
         1. I will provide you with a list of tracks in the format "Song Name by Artist Name".
         2. I will also provide a user's request, for example, "a playlist for a rainy day" or "songs for a morning workout".
-        3. You must carefully select 10 to 15 songs that best fit the user's request. Not necessarily all songs need to be from the provided list, but they should be similar in style or mood.
+        3. You must carefully select {num_songs} songs that best fit the user's request. Not necessarily all songs need to be from the provided list, but they should be similar in style or mood.
         4. Your response MUST be ONLY a comma-separated list of the exact song titles you have chosen. Do not add any introductory text, explanations, numbering, or quotation marks.
 
         User Request: "{mood_prompt}"
