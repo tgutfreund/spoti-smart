@@ -64,7 +64,7 @@ SpotiSmart combines the power of Google Gemini AI with Spotify's extensive music
 #### Spotify API Setup
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Create a new app
-3. Add `http://localhost:8080` to Redirect URIs
+3. Add `http://127.0.0.1:8888/callback` to Redirect URIs
 4. Copy your Client ID and Client Secret
 
 #### Google Gemini AI Setup
@@ -138,7 +138,7 @@ SpotiSmart/
 |----------|-------------|----------|---------|
 | `SPOTIFY_CLIENT_ID` | Spotify app client ID | ✅ | `abc123...` |
 | `SPOTIFY_CLIENT_SECRET` | Spotify app client secret | ✅ | `def456...` |
-| `SPOTIFY_REDIRECT_URI` | OAuth redirect URI | ✅ | `http://localhost:8080` |
+| `SPOTIFY_REDIRECT_URI` | OAuth redirect URI | ✅ | `http://127.0.0.1:8888/callback` |
 | `GEMINI_API_KEY` | Google Gemini AI API key | ✅ | `ghi789...` |
 
 ### Spotify OAuth Scopes
