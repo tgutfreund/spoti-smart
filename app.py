@@ -1,6 +1,7 @@
 import streamlit as st
 import sys
 import os
+import time
 
 # Add src to path so we can import our modules
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -29,15 +30,6 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
     }
     
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        margin: 0.5rem 0;
-    }
-    
     .track-card {
         background: #f8f9fa;
         padding: 1rem;
@@ -53,11 +45,6 @@ st.markdown("""
         border-radius: 8px;
         text-align: center;
         font-weight: bold;
-    }
-    
-    .sidebar .stSelectbox label {
-        font-weight: bold;
-        color: #1DB954;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -364,7 +351,6 @@ def generate_playlist_interface():
                             if st.session_state.cancel_generation:
                                 break
                             # Brief pause to avoid overwhelming the API
-                            import time
                             time.sleep(0.5)
                     
                     progress_bar.progress(100)
