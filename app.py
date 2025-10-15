@@ -116,16 +116,10 @@ def show_playlist_approval():
     
     st.markdown("## 🎧 Review Your Generated Playlist")
     
-    # Show playlist info
-    attempts_text = ""
-    if 'attempts_made' in data and data['attempts_made'] > 1:
-        attempts_text = f" (found after {data['attempts_made']} AI attempts)"
-    
     st.markdown(f"""
     <div style="background: #f0f8ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #1DB954; margin: 1rem 0;">
         <h4>📝 {data['title']}</h4>
-        <p><strong>Found:</strong> {len(data['found_tracks'])} recommended tracks{attempts_text}</p>
-        <p><strong>Total AI recommendations:</strong> {data.get('total_recommendations', len(data['found_tracks']))}</p>
+        <p><strong>Found:</strong> {len(data['found_tracks'])} recommended tracks</p>
         <p><strong>Description:</strong> {data['description']}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -230,7 +224,7 @@ def generate_playlist_interface():
         
         playlist_length = st.selectbox(
             "⏱️ Playlist Length",
-            options=[10, 15, 20, 25, 30, 35, 40, 45, 50],
+            options=[10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100],
             index=3,
             help="Number of songs to generate"
         )
@@ -262,7 +256,7 @@ def generate_playlist_interface():
                 st.rerun()
         
         # Show loading with progress
-        with st.spinner("🤖 AI is analyzing your taste and generating playlist..."):
+        with st.spinner("🤖 Analyzing your taste and generating playlist..."):
             progress_bar = st.progress(0)
             
             # Get inspiration tracks
@@ -279,7 +273,7 @@ def generate_playlist_interface():
             # Generate with LLM and search for tracks with retry logic
             if not st.session_state.cancel_generation:
                 progress_bar.progress(50)
-                st.write("🧠 AI is analyzing your music taste...")
+                st.write("🧠 Analyzing your music taste...")
                 
                 try:
                     gemini_client = GeminiClient()
@@ -300,7 +294,7 @@ def generate_playlist_interface():
                         progress_bar.progress(min(base_progress, 80))
                         
                         if attempt == 1:
-                            st.write(f"🧠 AI is generating songs (attempt {attempt})...")
+                            st.write(f"✨ Generating songs (attempt {attempt})...")
                         else:
                             needed = playlist_length - len(track_uris)
                             st.write(f"🔄 Need {needed} more songs, trying again (attempt {attempt})...")
@@ -379,12 +373,6 @@ def generate_playlist_interface():
                         st.error("Could not find any of the recommended songs on Spotify.")
                         st.session_state.generating_playlist = False
                         return
-                    
-                    # Show final status
-                    if len(track_uris) < playlist_length:
-                        st.warning(f"⚠️ Found {len(track_uris)} out of {playlist_length} requested songs after {attempt-1} attempts.")
-                    else:
-                        st.success(f"✅ Successfully found all {len(track_uris)} songs!")
                     
                 except Exception as e:
                     st.error(f"Error generating recommendations: {e}")
