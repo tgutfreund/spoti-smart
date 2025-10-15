@@ -208,3 +208,21 @@ __marimo__/
 
 # Spotipy
 .spotify_cache
+
+# SpotiSmart specific
+exports/
+config/spotify_config.json
+.env.local
+.env.production
+.env.development
+
+# AI API keys and secrets
+gemini_config.json
+api_keys.json
+
+# Streamlit cache
+.streamlit/
+
+# Project logs
+*.log
+logs/
