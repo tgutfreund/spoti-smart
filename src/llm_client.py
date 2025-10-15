@@ -20,39 +20,43 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+
 class GeminiClient:
     """
     A client to interact with the Google Gemini AI API for music recommendations.
-    
+
     This class handles:
     - API authentication using environment variables
     - Prompt engineering for music recommendation tasks
     - Response parsing and error handling
     - Exclusion logic for retry scenarios
     """
+
     def __init__(self):
         """
         Initialize the Gemini client with API key from environment variables.
-        
+
         Raises:
             ValueError: If GEMINI_API_KEY is not found in environment variables
         """
-        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.api_key = os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found in .env file.")
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.model = genai.GenerativeModel("gemini-2.5-flash")
 
-    def generate_playlist_songs(self, mood_prompt, tracks, num_songs=15, exclude_songs=None):
+    def generate_playlist_songs(
+        self, mood_prompt, tracks, num_songs=15, exclude_songs=None
+    ):
         """
         Generate song recommendations using AI based on user's mood and listening history.
-        
+
         This method constructs a detailed prompt for the Gemini AI model that includes:
         - User's mood/activity description
         - Their top tracks for inspiration
         - Exclusion list to avoid repeating failed searches
         - Specific formatting requirements for Spotify API compatibility
-        
+
         Args:
             mood_prompt: User's description of mood/activity
             tracks: User's top tracks for inspiration
@@ -60,7 +64,12 @@ class GeminiClient:
             exclude_songs: List of songs to avoid (from previous attempts)
         """
         # Format the track list so the LLM can easily read it
-        track_list_str = '", "'.join([f"{track['name']} by {', '.join([a['name'] for a in track['artists']])}" for track in tracks])
+        track_list_str = '", "'.join(
+            [
+                f"{track['name']} by {', '.join([a['name'] for a in track['artists']])}"
+                for track in tracks
+            ]
+        )
         track_list_str = f'"{track_list_str}"'
 
         # Prepare exclusion text if we have songs to exclude from previous attempts
@@ -84,14 +93,13 @@ class GeminiClient:
         User Request: "{mood_prompt}"
         User's Top Track List: {track_list_str}
         """
-        
+
         try:
             print("Sending prompt to the LLM...")
             response = self.model.generate_content(full_prompt)
             # Parse the response and clean up song names
-            song_names = [name.strip() for name in response.text.split(',')]
+            song_names = [name.strip() for name in response.text.split(",")]
             return song_names
         except Exception as e:
             print(f"An error occurred with the LLM API: {e}")
             return []
-
