@@ -53,7 +53,7 @@ SpotiSmart combines the power of Google Gemini AI with Spotify's extensive music
    # Spotify API Credentials
    SPOTIFY_CLIENT_ID=your_spotify_client_id
    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-   SPOTIFY_REDIRECT_URI=http://localhost:8080
+   SPOTIFY_REDIRECT_URI=http://127.0.0.1:8888/callback
    
    # Google Gemini AI API Key
    GEMINI_API_KEY=your_gemini_api_key
