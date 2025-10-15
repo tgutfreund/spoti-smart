@@ -71,6 +71,10 @@ if 'user_profile' not in st.session_state:
     st.session_state.user_profile = None
 if 'top_tracks' not in st.session_state:
     st.session_state.top_tracks = None
+if 'generating_playlist' not in st.session_state:
+    st.session_state.generating_playlist = False
+if 'cancel_generation' not in st.session_state:
+    st.session_state.cancel_generation = False
 
 def authenticate_spotify():
     """Handle Spotify authentication"""
@@ -138,7 +142,7 @@ def generate_playlist_interface():
         )
     
     # Generate button
-    if st.button("🚀 Generate AI Playlist", type="primary", use_container_width=True):
+    if st.button("🚀 Generate AI Playlist", type="primary", use_container_width=True, disabled=st.session_state.generating_playlist):
         if not playlist_title.strip():
             st.error("Please enter a playlist title!")
             return
@@ -147,39 +151,71 @@ def generate_playlist_interface():
             st.error("Please describe your mood or activity!")
             return
         
-        # Show loading
+        # Set generating state
+        st.session_state.generating_playlist = True
+        st.session_state.cancel_generation = False
+        st.rerun()
+    
+    # Show cancel button and progress when generating
+    if st.session_state.generating_playlist:
+        # Cancel button
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("❌ Cancel Generation", type="secondary", use_container_width=True):
+                st.session_state.generating_playlist = False
+                st.session_state.cancel_generation = True
+                st.warning("🛑 Playlist generation cancelled!")
+                st.rerun()
+        
+        # Show loading with progress
         with st.spinner("🤖 AI is analyzing your taste and generating playlist..."):
             progress_bar = st.progress(0)
             
             # Get inspiration tracks
-            progress_bar.progress(20)
-            inspiration_tracks = get_user_top_tracks(num_inspiration_tracks)
-            
-            if not inspiration_tracks:
-                st.error("Could not fetch your top tracks. Please try again.")
-                return
+            if not st.session_state.cancel_generation:
+                progress_bar.progress(20)
+                st.write("📊 Fetching your top tracks...")
+                inspiration_tracks = get_user_top_tracks(num_inspiration_tracks)
+                
+                if not inspiration_tracks:
+                    st.error("Could not fetch your top tracks. Please try again.")
+                    st.session_state.generating_playlist = False
+                    return
             
             # Generate with LLM
-            progress_bar.progress(50)
-            try:
-                gemini_client = GeminiClient()
-                recommendations = gemini_client.generate_playlist_songs(
-                    mood_prompt, 
-                    inspiration_tracks, 
-                    playlist_length
-                )
-                
-                if not recommendations:
-                    st.error("AI could not generate recommendations. Please try a different prompt.")
+            if not st.session_state.cancel_generation:
+                progress_bar.progress(50)
+                st.write("🧠 AI is analyzing your music taste...")
+                try:
+                    gemini_client = GeminiClient()
+                    recommendations = gemini_client.generate_playlist_songs(
+                        mood_prompt, 
+                        inspiration_tracks, 
+                        playlist_length
+                    )
+                    
+                    if not recommendations:
+                        st.error("AI could not generate recommendations. Please try a different prompt.")
+                        st.session_state.generating_playlist = False
+                        return
+                    
+                except Exception as e:
+                    st.error(f"Error generating recommendations: {e}")
+                    st.session_state.generating_playlist = False
                     return
-                
+            
+            # Search for tracks on Spotify
+            if not st.session_state.cancel_generation:
                 progress_bar.progress(70)
-                
-                # Search for tracks on Spotify
+                st.write("🔍 Searching for tracks on Spotify...")
                 track_uris = []
                 found_tracks = []
                 
                 for i, recommendation in enumerate(recommendations):
+                    # Check for cancellation during search
+                    if st.session_state.cancel_generation:
+                        break
+                        
                     try:
                         if ' by ' in recommendation:
                             song_name, artist_name = recommendation.split(' by ', 1)
@@ -196,14 +232,17 @@ def generate_playlist_interface():
                         
                     except Exception as e:
                         continue
-                
+            
+            # Create playlist
+            if not st.session_state.cancel_generation:
                 progress_bar.progress(90)
                 
                 if not track_uris:
                     st.error("Could not find any of the recommended songs on Spotify.")
+                    st.session_state.generating_playlist = False
                     return
                 
-                # Create playlist
+                st.write("📝 Creating playlist on Spotify...")
                 playlist_id = st.session_state.spotify_client.create_playlist(
                     playlist_title,
                     f"{mood_prompt} - Generated by SpotiSmart AI"
@@ -212,6 +251,9 @@ def generate_playlist_interface():
                 if playlist_id:
                     st.session_state.spotify_client.add_tracks_to_playlist(playlist_id, track_uris)
                     progress_bar.progress(100)
+                    
+                    # Reset generating state
+                    st.session_state.generating_playlist = False
                     
                     # Success message
                     st.markdown(f"""
@@ -241,10 +283,12 @@ def generate_playlist_interface():
                 
                 else:
                     st.error("Failed to create playlist on Spotify.")
-                
-            except Exception as e:
-                st.error(f"Error generating playlist: {e}")
-                return
+                    st.session_state.generating_playlist = False
+            
+            # Handle cancellation
+            if st.session_state.cancel_generation:
+                st.session_state.generating_playlist = False
+                st.session_state.cancel_generation = False
 
 def main():
     """Main application"""
