@@ -1,52 +1,88 @@
 #!/usr/bin/env python3
+"""
+SpotiSmart CLI - Command Line Interface for AI Playlist Generation
 
- 
+This script provides a command-line interface for creating AI-generated Spotify playlists
+based on user's listening history and mood descriptions.
+
+Usage:
+    python main.py create -t "Playlist Title" -p "Mood description" [-n num_tracks]
+
+Examples:
+    python main.py create -t "Workout Vibes" -p "High energy songs for gym" -n 30
+    python main.py create -t "Study Session" -p "Calm instrumental music for focus"
+
+Dependencies:
+- SpotifyClient: Handles Spotify API interactions
+- GeminiClient: Provides AI-powered song recommendations
+"""
+
 import argparse
 import sys
 from src.llm_client import GeminiClient
 from src.spotify_client import SpotifyClient
 
 def main():
-    # Set up argument parsing
-    parser = argparse.ArgumentParser(description="SpotiSmart: Smart Playlist Generator")
+    """
+    Main CLI entry point for SpotiSmart playlist generation.
+    
+    Handles command-line argument parsing, orchestrates the playlist creation workflow:
+    1. Parse and validate command-line arguments
+    2. Authenticate with Spotify
+    3. Fetch user's top tracks for AI inspiration
+    4. Generate song recommendations using AI
+    5. Search for tracks on Spotify
+    6. Create and populate the playlist
+    """
+    # Set up command-line argument parsing
+    parser = argparse.ArgumentParser(
+        description="SpotiSmart: AI-Powered Spotify Playlist Generator",
+        epilog="Example: python main.py create -t 'Workout Mix' -p 'High energy songs for gym' -n 25"
+    )
+    
     parser.add_argument('command', choices=['create'], 
-                       help='Command to execute: create')
-    parser.add_argument('-t', '--title', type=str, required=True, help='Title of the playlist to create.')
-    parser.add_argument('-p', '--prompt', type=str, required=True, help='The mood or theme for your playlist (e.g., "rainy day focus music").')
-    parser.add_argument('-n', '--num_tracks', type=int, default=40, help='Number of your top tracks to use as inspiration.(max 100).')
+                       help='Command to execute (currently only "create" is supported)')
+    parser.add_argument('-t', '--title', type=str, required=True, 
+                       help='Title of the playlist to create')
+    parser.add_argument('-p', '--prompt', type=str, required=True, 
+                       help='The mood or theme for your playlist (e.g., "rainy day focus music")')
+    parser.add_argument('-n', '--num_tracks', type=int, default=40, 
+                       help='Number of songs to generate for the playlist (default: 40)')
 
     args = parser.parse_args()
 
     if args.command == 'create':
-        # Initialize Clients
+        # Initialize API clients
         spotify_client = SpotifyClient()
         gemini_client = GeminiClient()
 
-        # Authenticate with Spotify
-        print("Authenticating with Spotify...")
+        # Step 1: Authenticate with Spotify
+        print("🔐 Authenticating with Spotify...")
         sp = spotify_client.authenticate()
         if not sp:
-            print("Could not authenticate with Spotify. Exiting.")
-            sys.exit(1) # Exit if authentication fails
+            print("❌ Could not authenticate with Spotify. Please check your credentials.")
+            sys.exit(1)
 
-        # Get User's Top Tracks
-        print(f"Fetching your top tracks...")
+        # Step 2: Get user's top tracks for AI inspiration
+        print(f"📊 Fetching your top tracks...")
         tracks = spotify_client.get_user_top_tracks(limit=50, time_range='medium_term')
         if not tracks:
-            print("Could not fetch your top tracks. Exiting.")
+            print("❌ Could not fetch your top tracks. Please try again.")
             sys.exit(1)
 
-        # Get Song Recommendations from the LLM
+        # Step 3: Get AI-powered song recommendations
+        print(f"🤖 Generating {args.num_tracks} song recommendations...")
         recommendations = gemini_client.generate_playlist_songs(args.prompt, tracks, args.num_tracks)
         if not recommendations:
-            print("The LLM could not generate a song list from your tracks. Exiting.")
+            print("❌ The AI could not generate song recommendations. Please try a different prompt.")
             sys.exit(1)
 
-        print(f"\nLLM recommended songs for your playlist:")
-        for name in recommendations:
-            print(f"- {name}")
+        print(f"\n🎵 AI recommended songs for your playlist:")
+        for i, name in enumerate(recommendations, 1):
+            print(f"   {i:2d}. {name}")
 
-        # Find Track URIs for the Recommended Songs
+        # Step 4: Search for tracks on Spotify and collect URIs
+        print(f"\n🔍 Searching for tracks on Spotify...")
         track_uris_to_add = []
         for item in recommendations:
             try:
@@ -56,11 +92,11 @@ def main():
                 if track_uri:
                     track_uris_to_add.append(track_uri)
             except ValueError:
-                print(f"Warning: Could not parse recommendation '{item}'. Skipping.")
+                print(f"   ⚠️  Could not parse recommendation: '{item}'. Skipping.")
                 continue
         
         if not track_uris_to_add:
-            print("Couldn't find any of the recommended songs on Spotify. Exiting.")
+            print("\n❌ Couldn't find any of the recommended songs on Spotify.")
             sys.exit(1)
 
         # Create and populate the playlist
@@ -68,8 +104,16 @@ def main():
         playlist_id = spotify_client.create_playlist(playlist_name, f"{args.prompt} - Generated by SpotiSmart")
         
         if playlist_id:
+            print(f"🎵 Adding {len(track_uris_to_add)} tracks to playlist...")
             spotify_client.add_tracks_to_playlist(playlist_id, track_uris_to_add)
-            print("\n✅ Playlist created successfully on Spotify!")
+            
+            # Success message with Spotify link
+            spotify_url = f"https://open.spotify.com/playlist/{playlist_id}"
+            print(f"\n🎉 Playlist '{args.title}' created successfully!")
+            print(f"🔗 Open in Spotify: {spotify_url}")
+        else:
+            print("❌ Failed to create playlist on Spotify.")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()

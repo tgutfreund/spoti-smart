@@ -1,3 +1,30 @@
+
+"""
+SpotiSmart - AI Playlist Generator Web Application
+
+Streamlit web interface for generating personalized Spotify playlists using AI.
+Combines user's music taste with mood descriptions to create custom playlists.
+
+Features:
+- Spotify OAuth authentication
+- AI-powered song recommendations via Google Gemini
+- Interactive playlist approval workflow
+- Real-time progress tracking with cancellation
+- Direct playlist creation in Spotify
+
+Dependencies:
+- streamlit: Web interface framework
+- spotipy: Spotify Web API wrapper
+- google-generativeai: AI recommendations
+- python-dotenv: Environment variable management
+
+Environment Variables Required:
+- SPOTIFY_CLIENT_ID: Spotify app client ID
+- SPOTIFY_CLIENT_SECRET: Spotify app client secret
+- SPOTIFY_REDIRECT_URI: OAuth redirect URI (usually http://localhost:8080)
+- GEMINI_API_KEY: Google Gemini AI API key
+"""
+
 import streamlit as st
 import sys
 import os
@@ -49,34 +76,41 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state
+# Initialize session state variables
+# These variables persist across Streamlit reruns and store the application state
 if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
+    st.session_state.authenticated = False  # Track if user is logged into Spotify
 if 'spotify_client' not in st.session_state:
-    st.session_state.spotify_client = None
+    st.session_state.spotify_client = None  # Store the authenticated Spotify client
 if 'user_profile' not in st.session_state:
-    st.session_state.user_profile = None
+    st.session_state.user_profile = None  # Store user's Spotify profile data
 if 'top_tracks' not in st.session_state:
-    st.session_state.top_tracks = None
+    st.session_state.top_tracks = None  # Cache user's top tracks
 if 'generating_playlist' not in st.session_state:
-    st.session_state.generating_playlist = False
+    st.session_state.generating_playlist = False  # Track if playlist generation is in progress
 if 'cancel_generation' not in st.session_state:
-    st.session_state.cancel_generation = False
+    st.session_state.cancel_generation = False  # Track if user wants to cancel generation
 if 'pending_playlist' not in st.session_state:
-    st.session_state.pending_playlist = None
+    st.session_state.pending_playlist = None  # Track if there's a playlist awaiting approval
 if 'playlist_data' not in st.session_state:
-    st.session_state.playlist_data = None
+    st.session_state.playlist_data = None  # Store generated playlist data for approval
 
 def authenticate_spotify():
-    """Handle Spotify authentication"""
+    """
+    Handle Spotify authentication and store client in session state.
+    
+    Returns:
+        bool: True if authentication successful, False otherwise
+    """
     try:
         client = SpotifyClient()
         sp = client.authenticate()
         if sp:
+            # Store authenticated client and user data in session state
             st.session_state.spotify_client = client
             st.session_state.authenticated = True
             
-            # Get user profile
+            # Get user profile information
             user = sp.current_user()
             st.session_state.user_profile = user
             
@@ -87,7 +121,15 @@ def authenticate_spotify():
         return False
 
 def get_user_top_tracks(limit=50):
-    """Fetch user's top tracks"""
+    """
+    Fetch user's top tracks from Spotify and cache in session state.
+    
+    Args:
+        limit (int): Maximum number of tracks to fetch (default: 50)
+        
+    Returns:
+        list: List of track objects from Spotify API, or None if failed
+    """
     if st.session_state.spotify_client:
         tracks = st.session_state.spotify_client.get_user_top_tracks(limit=limit)
         st.session_state.top_tracks = tracks
@@ -95,7 +137,14 @@ def get_user_top_tracks(limit=50):
     return None
 
 def show_playlist_approval():
-    """Show the generated playlist for user approval"""
+    """
+    Display the generated playlist for user review and approval.
+    
+    Shows track list, playlist metadata, and action buttons for:
+    - Creating the playlist on Spotify
+    - Generating a new playlist
+    - Canceling the current generation
+    """
     if not st.session_state.playlist_data:
         return
     
@@ -103,6 +152,7 @@ def show_playlist_approval():
     
     st.markdown("## 🎧 Review Your Generated Playlist")
     
+    # Display playlist information box
     st.markdown(f"""
     <div style="background: #f0f8ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #1DB954; margin: 1rem 0;">
         <h4>📝 {data['title']}</h4>
@@ -128,7 +178,7 @@ def show_playlist_approval():
     
     with col1:
         if st.button("✅ Create Playlist", type="primary", use_container_width=True):
-            # Create the playlist
+            # Create the playlist on Spotify
             with st.spinner("📝 Creating playlist on Spotify..."):
                 playlist_id = st.session_state.spotify_client.create_playlist(
                     data['title'],
@@ -136,20 +186,21 @@ def show_playlist_approval():
                 )
                 
                 if playlist_id:
+                    # Add tracks to the created playlist
                     st.session_state.spotify_client.add_tracks_to_playlist(playlist_id, data['track_uris'])
                     
                     # Clear pending playlist
                     st.session_state.pending_playlist = None
                     st.session_state.playlist_data = None
                     
-                    # Success message
+                    # Show success message
                     st.markdown(f"""
                     <div class="success-message">
                         🎉 Playlist "{data['title']}" created successfully on Spotify!
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Spotify link
+                    # Provide link to open playlist in Spotify
                     spotify_playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
                     st.markdown(f"""
                     ### 🔗 [Open Playlist in Spotify]({spotify_playlist_url})
@@ -161,14 +212,14 @@ def show_playlist_approval():
     
     with col2:
         if st.button("🔄 Generate New", type="secondary", use_container_width=True):
-            # Clear pending playlist and go back to generation
+            # Clear pending playlist and return to generation interface
             st.session_state.pending_playlist = None
             st.session_state.playlist_data = None
             st.rerun()
     
     with col3:
         if st.button("❌ Cancel", use_container_width=True):
-            # Clear pending playlist
+            # Cancel and clear all pending data
             st.session_state.pending_playlist = None
             st.session_state.playlist_data = None
             st.rerun()
@@ -182,6 +233,7 @@ def generate_playlist_interface():
         show_playlist_approval()
         return
     
+    # User input section with form fields
     col1, col2 = st.columns([2, 1])
     
     # Input fields on left column
@@ -226,7 +278,7 @@ def generate_playlist_interface():
             st.error("Please describe your mood or activity!")
             return
         
-        # Set generating state
+        # Set generating state and clear any previous cancellation
         st.session_state.generating_playlist = True
         st.session_state.cancel_generation = False
         st.rerun()
@@ -242,7 +294,7 @@ def generate_playlist_interface():
                 st.warning("🛑 Playlist generation cancelled!")
                 st.rerun()
         
-        # Show loading with progress
+        # Main playlist generation workflow
         with st.spinner("🤖 Analyzing your taste and generating playlist..."):
             progress_bar = st.progress(0)
             
@@ -263,6 +315,7 @@ def generate_playlist_interface():
                 st.write("🧠 Analyzing your music taste...")
                 
                 try:
+                    # Initialize AI client and tracking variables
                     gemini_client = GeminiClient()
                     track_uris = []
                     found_tracks = []
@@ -272,6 +325,7 @@ def generate_playlist_interface():
                     max_attempts = 5  # Maximum number of LLM requests
                     attempt = 1
                     
+                    # Retry loop: continue until we have enough songs or max attempts
                     while len(track_uris) < playlist_length and attempt <= max_attempts:
                         if st.session_state.cancel_generation:
                             break
@@ -291,7 +345,7 @@ def generate_playlist_interface():
                         # Request a few extra to account for songs that might not be found
                         songs_to_request = min(songs_needed + 5, playlist_length)
                         
-                        # Generate recommendations
+                        # Generate AI recommendations (exclude previously tried songs)
                         recommendations = gemini_client.generate_playlist_songs(
                             mood_prompt, 
                             inspiration_tracks, 
@@ -327,6 +381,7 @@ def generate_playlist_interface():
                             used_songs.add(recommendation.lower())
                             
                             try:
+                                # Parse song name and artist from recommendation
                                 if ' by ' in recommendation:
                                     song_name, artist_name = recommendation.split(' by ', 1)
                                     track_uri = st.session_state.spotify_client.search_for_track(
@@ -346,15 +401,15 @@ def generate_playlist_interface():
                         
                         attempt += 1
                         
-                        # If we still don't have enough songs and haven't reached max attempts
+                        # Brief pause between attempts to avoid overwhelming APIs
                         if len(track_uris) < playlist_length and attempt <= max_attempts:
                             if st.session_state.cancel_generation:
                                 break
-                            # Brief pause to avoid overwhelming the API
                             time.sleep(0.5)
                     
                     progress_bar.progress(100)
                     
+                    # Check if we found any tracks
                     if not track_uris:
                         st.error("Could not find any of the recommended songs on Spotify.")
                         st.session_state.generating_playlist = False
@@ -365,7 +420,7 @@ def generate_playlist_interface():
                     st.session_state.generating_playlist = False
                     return
                 
-                # Store playlist data for approval
+                # Store playlist data for user approval
                 st.session_state.playlist_data = {
                     'title': playlist_title,
                     'description': f"{mood_prompt} - Generated by SpotiSmart AI",
@@ -384,15 +439,24 @@ def generate_playlist_interface():
                 st.session_state.cancel_generation = False
 
 def main():
-    """Main application"""
-    # Header
+    """
+    Main application entry point.
+    
+    Handles the overall app layout including:
+    - Header and branding
+    - Sidebar authentication and user management
+    - Main content routing based on authentication state
+    - Welcome screen for unauthenticated users
+    """
+    # Application header with Spotify branding
     st.markdown('<h1 class="main-header">🎵 SpotiSmart</h1>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; font-size: 1.2rem; color: #666;">AI-Powered Playlist Generation Tool</p>', unsafe_allow_html=True)
     
-    # Sidebar
+    # Sidebar for authentication and user management
     with st.sidebar:
         
         if not st.session_state.authenticated:
+            # Authentication section for non-logged-in users
             st.markdown("#### 🔐 Authentication")
             if st.button("🎵 Connect to Spotify", type="primary", use_container_width=True):
                 with st.spinner("Connecting to Spotify..."):
@@ -402,25 +466,28 @@ def main():
                     else:
                         st.error("❌ Connection failed")
         else:
-            # User info
+            # User management section for authenticated users
             if st.session_state.user_profile:
                 st.markdown("#### 👤 Connected User")
                 st.success(f"🎵 {st.session_state.user_profile.get('display_name', 'User')}")
                 
+                # Refresh user data button
                 if st.button("🔄 Refresh Data", use_container_width=True):
                     st.session_state.top_tracks = None
                     st.rerun()
                 
+                # Disconnect button
                 if st.button("🚪 Disconnect", use_container_width=True):
+                    # Clear all session state data
                     st.session_state.authenticated = False
                     st.session_state.spotify_client = None
                     st.session_state.user_profile = None
                     st.session_state.top_tracks = None
                     st.rerun()
     
-    # Main content
+    # Main content area routing
     if not st.session_state.authenticated:
-        # Welcome screen
+        # Welcome screen for unauthenticated users
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.markdown("""
@@ -441,7 +508,7 @@ def main():
             """)
     
     else:
-        # Main app interface
+        # Main app interface for authenticated users
         generate_playlist_interface()
 
 if __name__ == "__main__":

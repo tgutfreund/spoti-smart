@@ -1,12 +1,42 @@
+"""
+LLM Client for SpotiSmart AI Playlist Generation
+
+This module provides integration with Google's Gemini AI model to generate
+personalized music recommendations based on user's listening history and
+mood descriptions.
+
+Dependencies:
+- google-generativeai: Google Gemini API client
+- python-dotenv: Environment variable management
+
+Environment Variables Required:
+- GEMINI_API_KEY: API key for Google Gemini AI service
+"""
+
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
 
 class GeminiClient:
-    """A client to interact with the Google Gemini API."""
+    """
+    A client to interact with the Google Gemini AI API for music recommendations.
+    
+    This class handles:
+    - API authentication using environment variables
+    - Prompt engineering for music recommendation tasks
+    - Response parsing and error handling
+    - Exclusion logic for retry scenarios
+    """
     def __init__(self):
+        """
+        Initialize the Gemini client with API key from environment variables.
+        
+        Raises:
+            ValueError: If GEMINI_API_KEY is not found in environment variables
+        """
         self.api_key = os.getenv('GEMINI_API_KEY')
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found in .env file.")
@@ -15,7 +45,13 @@ class GeminiClient:
 
     def generate_playlist_songs(self, mood_prompt, tracks, num_songs=15, exclude_songs=None):
         """
-        Sends a curated prompt to the LLM to get a list of recommended songs.
+        Generate song recommendations using AI based on user's mood and listening history.
+        
+        This method constructs a detailed prompt for the Gemini AI model that includes:
+        - User's mood/activity description
+        - Their top tracks for inspiration
+        - Exclusion list to avoid repeating failed searches
+        - Specific formatting requirements for Spotify API compatibility
         
         Args:
             mood_prompt: User's description of mood/activity
@@ -27,12 +63,12 @@ class GeminiClient:
         track_list_str = '", "'.join([f"{track['name']} by {', '.join([a['name'] for a in track['artists']])}" for track in tracks])
         track_list_str = f'"{track_list_str}"'
 
-        # Prepare exclusion text if we have songs to exclude
+        # Prepare exclusion text if we have songs to exclude from previous attempts
         exclusion_text = ""
         if exclude_songs:
-            exclusion_text = f"\n\nIMPORTANT: Do NOT include any of these songs that were already suggested: {', '.join(exclude_songs[:50])}. Please suggest completely different songs."
+            exclusion_text = f"\n\nIMPORTANT: Do NOT include any of these songs that were already suggested: {', '.join(exclude_songs[:99])}. Please suggest completely different songs."
 
-        # This is the detailed prompt that instructs the LLM
+        # Construct the detailed prompt with specific instructions
         full_prompt = f"""
         You are a helpful and creative music assistant named SpotiSmart. Your task is to select songs to create a new playlist that perfectly matches their requested mood or activity based on a list of their top tracks tracks.
 
@@ -52,7 +88,7 @@ class GeminiClient:
         try:
             print("Sending prompt to the LLM...")
             response = self.model.generate_content(full_prompt)
-            # Clean up the response and split it into a list of song names
+            # Parse the response and clean up song names
             song_names = [name.strip() for name in response.text.split(',')]
             return song_names
         except Exception as e:
