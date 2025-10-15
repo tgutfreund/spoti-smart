@@ -24,6 +24,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import os
 from dotenv import load_dotenv
+from spotipy.cache_handler import MemoryCacheHandler
 
 # Load environment variables from .env file
 load_dotenv()
@@ -74,21 +75,20 @@ class SpotifyClient:
             spotipy.Spotify: Authenticated Spotify client, or None if failed
         """
         try:
+            cache_handler = MemoryCacheHandler()
             # Set up OAuth2 authentication manager
             auth_manager = SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
                 redirect_uri=self.redirect_uri,
                 scope=self.scope,
-                cache_path=".spotify_cache",
+                cache_handler=cache_handler,
+                show_dialog=True,
             )
 
             # Create authenticated Spotify client
             self.sp = spotipy.Spotify(auth_manager=auth_manager)
 
-            # Verify authentication by getting user profile
-            user = self.sp.current_user()
-            print(f"Successfully authenticated as: {user['display_name']}")
             return self.sp
         except Exception as e:
             print(f"Authentication failed: {e}")
