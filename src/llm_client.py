@@ -13,13 +13,24 @@ class GeminiClient:
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
 
-    def generate_playlist_songs(self, mood_prompt, tracks, num_songs=15):
+    def generate_playlist_songs(self, mood_prompt, tracks, num_songs=15, exclude_songs=None):
         """
         Sends a curated prompt to the LLM to get a list of recommended songs.
+        
+        Args:
+            mood_prompt: User's description of mood/activity
+            tracks: User's top tracks for inspiration
+            num_songs: Number of songs to generate
+            exclude_songs: List of songs to avoid (from previous attempts)
         """
         # Format the track list so the LLM can easily read it
         track_list_str = '", "'.join([f"{track['name']} by {', '.join([a['name'] for a in track['artists']])}" for track in tracks])
         track_list_str = f'"{track_list_str}"'
+
+        # Prepare exclusion text if we have songs to exclude
+        exclusion_text = ""
+        if exclude_songs:
+            exclusion_text = f"\n\nIMPORTANT: Do NOT include any of these songs that were already suggested: {', '.join(exclude_songs[:50])}. Please suggest completely different songs."
 
         # This is the detailed prompt that instructs the LLM
         full_prompt = f"""
@@ -32,7 +43,7 @@ class GeminiClient:
         4. Your response MUST be ONLY a comma-separated list of the exact song titles you have chosen ONLY! in the format - 'Song Name by Artist'. Do not add any introductory text, explanations, numbering, or quotation marks.
         5. Ensure that the songs you select are popular and widely recognized tracks that fit the mood or activity described in the user's request.
         6. Do not make up any song titles or artists. Only use real songs. Double check your work to ensure accuracy.
-        7. Make sure that the song name and artist name are accurate, correctly spelled, and in the correct language, as they will be used to search for the songs on Spotify through the Spotify API, spotipy.
+        7. Make sure that the song name and artist name are accurate, correctly spelled, and in the correct language, as they will be used to search for the songs on Spotify through the Spotify API, spotipy.{exclusion_text}
 
         User Request: "{mood_prompt}"
         User's Top Track List: {track_list_str}

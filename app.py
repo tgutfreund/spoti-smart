@@ -117,10 +117,15 @@ def show_playlist_approval():
     st.markdown("## 🎧 Review Your Generated Playlist")
     
     # Show playlist info
+    attempts_text = ""
+    if 'attempts_made' in data and data['attempts_made'] > 1:
+        attempts_text = f" (found after {data['attempts_made']} AI attempts)"
+    
     st.markdown(f"""
     <div style="background: #f0f8ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #1DB954; margin: 1rem 0;">
         <h4>📝 {data['title']}</h4>
-        <p><strong>Found:</strong> {len(data['found_tracks'])} out of {data['total_recommendations']} recommended tracks</p>
+        <p><strong>Found:</strong> {len(data['found_tracks'])} recommended tracks{attempts_text}</p>
+        <p><strong>Total AI recommendations:</strong> {data.get('total_recommendations', len(data['found_tracks']))}</p>
         <p><strong>Description:</strong> {data['description']}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -271,61 +276,118 @@ def generate_playlist_interface():
                     st.session_state.generating_playlist = False
                     return
             
-            # Generate with LLM
+            # Generate with LLM and search for tracks with retry logic
             if not st.session_state.cancel_generation:
                 progress_bar.progress(50)
                 st.write("🧠 AI is analyzing your music taste...")
+                
                 try:
                     gemini_client = GeminiClient()
-                    recommendations = gemini_client.generate_playlist_songs(
-                        mood_prompt, 
-                        inspiration_tracks, 
-                        playlist_length
-                    )
+                    track_uris = []
+                    found_tracks = []
+                    all_recommendations = []
+                    used_songs = set()  # Track songs we've already tried to avoid duplicates
                     
-                    if not recommendations:
-                        st.error("AI could not generate recommendations. Please try a different prompt.")
+                    max_attempts = 5  # Maximum number of LLM requests
+                    attempt = 1
+                    
+                    while len(track_uris) < playlist_length and attempt <= max_attempts:
+                        if st.session_state.cancel_generation:
+                            break
+                        
+                        # Update progress and status message
+                        base_progress = 50 + (attempt - 1) * 10
+                        progress_bar.progress(min(base_progress, 80))
+                        
+                        if attempt == 1:
+                            st.write(f"🧠 AI is generating songs (attempt {attempt})...")
+                        else:
+                            needed = playlist_length - len(track_uris)
+                            st.write(f"🔄 Need {needed} more songs, trying again (attempt {attempt})...")
+                        
+                        # Calculate how many songs to request this round
+                        songs_needed = playlist_length - len(track_uris)
+                        # Request a few extra to account for songs that might not be found
+                        songs_to_request = min(songs_needed + 5, playlist_length)
+                        
+                        # Generate recommendations
+                        recommendations = gemini_client.generate_playlist_songs(
+                            mood_prompt, 
+                            inspiration_tracks, 
+                            songs_to_request,
+                            exclude_songs=list(used_songs) if attempt > 1 else []
+                        )
+                        
+                        if not recommendations:
+                            if attempt == 1:
+                                st.error("AI could not generate recommendations. Please try a different prompt.")
+                                st.session_state.generating_playlist = False
+                                return
+                            else:
+                                break  # Exit loop if no more recommendations
+                        
+                        all_recommendations.extend(recommendations)
+                        
+                        # Search for tracks on Spotify
+                        progress_bar.progress(min(base_progress + 5, 85))
+                        st.write("🔍 Searching for tracks on Spotify...")
+                        
+                        for i, recommendation in enumerate(recommendations):
+                            if st.session_state.cancel_generation:
+                                break
+                            
+                            if len(track_uris) >= playlist_length:
+                                break  # We have enough songs
+                            
+                            # Skip if we've already processed this song
+                            if recommendation.lower() in used_songs:
+                                continue
+                            
+                            used_songs.add(recommendation.lower())
+                            
+                            try:
+                                if ' by ' in recommendation:
+                                    song_name, artist_name = recommendation.split(' by ', 1)
+                                    track_uri = st.session_state.spotify_client.search_for_track(
+                                        song_name.strip(), 
+                                        artist_name.strip()
+                                    )
+                                    if track_uri:
+                                        track_uris.append(track_uri)
+                                        found_tracks.append(recommendation)
+                                
+                                # Update progress within search
+                                search_progress = (i + 1) / len(recommendations) * 5
+                                progress_bar.progress(min(base_progress + 5 + search_progress, 90))
+                                
+                            except Exception as e:
+                                continue
+                        
+                        attempt += 1
+                        
+                        # If we still don't have enough songs and haven't reached max attempts
+                        if len(track_uris) < playlist_length and attempt <= max_attempts:
+                            if st.session_state.cancel_generation:
+                                break
+                            # Brief pause to avoid overwhelming the API
+                            import time
+                            time.sleep(0.5)
+                    
+                    progress_bar.progress(100)
+                    
+                    if not track_uris:
+                        st.error("Could not find any of the recommended songs on Spotify.")
                         st.session_state.generating_playlist = False
                         return
                     
+                    # Show final status
+                    if len(track_uris) < playlist_length:
+                        st.warning(f"⚠️ Found {len(track_uris)} out of {playlist_length} requested songs after {attempt-1} attempts.")
+                    else:
+                        st.success(f"✅ Successfully found all {len(track_uris)} songs!")
+                    
                 except Exception as e:
                     st.error(f"Error generating recommendations: {e}")
-                    st.session_state.generating_playlist = False
-                    return
-            
-            # Search for tracks on Spotify
-            if not st.session_state.cancel_generation:
-                progress_bar.progress(70)
-                st.write("🔍 Searching for tracks on Spotify...")
-                track_uris = []
-                found_tracks = []
-                
-                for i, recommendation in enumerate(recommendations):
-                    # Check for cancellation during search
-                    if st.session_state.cancel_generation:
-                        break
-                        
-                    try:
-                        if ' by ' in recommendation:
-                            song_name, artist_name = recommendation.split(' by ', 1)
-                            track_uri = st.session_state.spotify_client.search_for_track(
-                                song_name.strip(), 
-                                artist_name.strip()
-                            )
-                            if track_uri:
-                                track_uris.append(track_uri)
-                                found_tracks.append(recommendation)
-                        
-                        # Update progress
-                        progress_bar.progress(70 + (i / len(recommendations)) * 30)
-                        
-                    except Exception as e:
-                        continue
-                
-                progress_bar.progress(100)
-                
-                if not track_uris:
-                    st.error("Could not find any of the recommended songs on Spotify.")
                     st.session_state.generating_playlist = False
                     return
                 
@@ -335,7 +397,8 @@ def generate_playlist_interface():
                     'description': f"{mood_prompt} - Generated by SpotiSmart AI",
                     'track_uris': track_uris,
                     'found_tracks': found_tracks,
-                    'total_recommendations': len(recommendations)
+                    'total_recommendations': len(all_recommendations),
+                    'attempts_made': attempt - 1
                 }
                 st.session_state.pending_playlist = True
                 st.session_state.generating_playlist = False
