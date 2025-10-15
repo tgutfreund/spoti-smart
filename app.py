@@ -254,7 +254,6 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.markdown("### 🎛️ Control Panel")
         
         if not st.session_state.authenticated:
             st.markdown("#### 🔐 Authentication")
