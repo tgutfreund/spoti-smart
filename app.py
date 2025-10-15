@@ -130,7 +130,7 @@ def generate_playlist_interface():
             "🎯 Number of inspiration tracks",
             min_value=10,
             max_value=50,
-            value=25,
+            value=50,
             help="How many of your top tracks should inspire the AI?"
         )
         
@@ -259,7 +259,7 @@ def generate_playlist_interface():
                     st.markdown(f"""
                     <div class="success-message">
                         🎉 Playlist "{playlist_title}" created successfully! 
-                        <br>Found {len(found_tracks)} out of {len(recommendations)} recommended tracks.
+                        <br>Found {len(found_tracks)} recommended tracks.
                     </div>
                     """, unsafe_allow_html=True)
                     
