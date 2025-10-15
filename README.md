@@ -130,20 +130,6 @@ SpotiSmart/
 └── README.md            # This file
 ```
 
-
-### Code Quality
-
-```bash
-# Format code
-black .
-
-# Type checking
-mypy src/
-
-# Linting
-pylint src/
-```
-
 ## 🔧 Configuration
 
 ### Environment Variables
