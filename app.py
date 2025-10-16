@@ -207,31 +207,29 @@ def show_playlist_approval():
                         playlist_id, data["track_uris"]
                     )
 
-                    # Clear pending playlist
+                    # Clear all playlist-related session state immediately
                     st.session_state.pending_playlist = None
                     st.session_state.playlist_data = None
+                    st.session_state.generating_playlist = False
+                    st.session_state.cancel_generation = False
 
-                    # Show success message
-                    st.markdown(
-                        f"""
-                    <div class="success-message">
-                        🎉 Playlist "{data['title']}" created successfully on Spotify!
-                    </div>
-                    """,
-                        unsafe_allow_html=True,
-                    )
+                    # Show success message and link to open playlist
+                    st.success(f"✅ Playlist '{data['title']}' created successfully!")
 
-                    # Provide link to open playlist in Spotify
-                    spotify_playlist_url = (
-                        f"https://open.spotify.com/playlist/{playlist_id}"
+                    # Create link button to open playlist in new tab
+                    spotify_playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+                    st.link_button(
+                        "🎵 Open Playlist in Spotify", 
+                        spotify_playlist_url,
+                        use_container_width=True
                     )
-                    st.markdown(
-                        f"""
-                    ### 🔗 [Open Playlist in Spotify]({spotify_playlist_url})
-                    """
-                    )
-
-                    st.rerun()
+                    
+                    
+                    # Add some spacing and return button
+                    st.markdown("---")
+                    if st.button("🔄 Create Another Playlist", use_container_width=True):
+                        # Force a rerun to return to main interface (state already cleared above)
+                        st.rerun()
                 else:
                     st.error("Failed to create playlist on Spotify.")
 
@@ -246,6 +244,8 @@ def show_playlist_approval():
 def generate_playlist_interface():
     """Interface for generating playlists"""
     st.markdown("## 🎵 Generate Your AI Playlist")
+
+
 
     # Show pending playlist approval if exists
     if st.session_state.pending_playlist:
