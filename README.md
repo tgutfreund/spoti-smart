@@ -150,7 +150,21 @@ The application requires these Spotify permissions:
 - `playlist-modify-public` - Create/modify public playlists
 - `user-read-recently-played` - Read recently played tracks
 
-## 🤝 Contributing
+## � Testing
+
+The project includes a comprehensive test file to ensure all components work correctly:
+
+```bash
+# Run all tests
+python test_basic.py
+```
+
+**Test Coverage:**
+- ✅ **Spotify API Integration** - Authentication, search, playlist creation
+- ✅ **Gemini AI Client** - Playlist generation, error handling
+- ✅ **Application Integration** - Component imports and initialization
+
+## �🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
