@@ -81,7 +81,8 @@ class SpotifyClient:
                 redirect_uri=self.redirect_uri,
                 scope=self.scope,
                 cache_path=".spotify_cache",
-                show_dialog=True,
+                show_dialog=False,
+                open_browser=False,
             )
 
             # Create authenticated Spotify client
@@ -89,8 +90,12 @@ class SpotifyClient:
             
             # Verify authentication by getting user profile
             user = self.sp.current_user()
-            print(f"Successfully authenticated as: {user['display_name']}")
-            return self.sp
+            if user:
+                print(f"Successfully authenticated as: {user.get('display_name', user['id'])}")
+                return self.sp
+            else:
+                print("Authentication failed: Could not get user profile")
+                return None
         except Exception as e:
             print(f"Authentication failed: {e}")
             return None
