@@ -28,8 +28,6 @@ import streamlit as st
 import sys
 import os
 import time
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 
 # Add src to path so we can import our modules
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
@@ -106,94 +104,30 @@ if "playlist_data" not in st.session_state:
     st.session_state.playlist_data = None  # Store generated playlist data for approval
 
 
-# def authenticate_spotify():
-#     """
-#     Handle Spotify authentication and store client in session state.
-
-#     Returns:
-#         bool: True if authentication successful, False otherwise
-#     """
-#     try:
-#         client = SpotifyClient()
-#         sp = client.authenticate()
-#         if sp:
-#             # Store authenticated client and user data in session state
-#             st.session_state.spotify_client = client
-#             st.session_state.authenticated = True
-
-#             # Get user profile information
-#             user = sp.current_user()
-#             st.session_state.user_profile = user
-
-#             return True
-#         return False
-#     except Exception as e:
-#         st.error(f"Authentication failed: {e}")
-#         return False
-
 def authenticate_spotify():
-    """Handle Spotify authentication for web deployment"""
+    """
+    Handle Spotify authentication and store client in session state.
+
+    Returns:
+        bool: True if authentication successful, False otherwise
+    """
     try:
         client = SpotifyClient()
-        
-        # Get the auth manager to handle the OAuth flow
-        auth_manager = SpotifyOAuth(
-            client_id=os.getenv('SPOTIFY_CLIENT_ID'),
-            client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
-            redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),
-            scope="user-top-read user-library-read playlist-modify-private playlist-modify-public user-read-recently-played",
-            show_dialog=False,
-            open_browser=False,
-            cache_path=".spotify_cache"
-        )
-        
-        # Check if we have a cached token
-        token_info = auth_manager.get_cached_token()
-        
-        if not token_info:
-            # Need to get authorization
-            auth_url = auth_manager.get_authorize_url()
-            st.markdown(f"### 🔐 Spotify Authorization Required")
-            st.markdown(f"Please click the link below to authorize SpotiSmart:")
-            st.markdown(f"[**🎵 Connect to Spotify**]({auth_url})")
-            st.markdown("After authorizing, copy the URL you were redirected to and paste it below:")
-            
-            # Get the redirect URL from user
-            redirect_response = st.text_input("Paste the redirect URL here:", key="spotify_redirect")
-            
-            if redirect_response:
-                try:
-                    # Extract the authorization code from the URL
-                    code = auth_manager.parse_response_code(redirect_response)
-                    token_info = auth_manager.get_access_token(code)
-                    
-                    if token_info:
-                        # Create Spotify client with token
-                        sp = spotipy.Spotify(auth_manager=auth_manager)
-                        st.session_state.spotify_client = SpotifyClient()
-                        st.session_state.spotify_client.sp = sp
-                        st.session_state.authenticated = True
-                        st.session_state.user_profile = sp.current_user()
-                        st.success("✅ Successfully connected to Spotify!")
-                        st.rerun()
-                        return True
-                except Exception as e:
-                    st.error(f"Authorization failed: {e}")
-                    return False
-        else:
-            # We have a cached token, create client
-            sp = spotipy.Spotify(auth_manager=auth_manager)
-            st.session_state.spotify_client = SpotifyClient()
-            st.session_state.spotify_client.sp = sp
+        sp = client.authenticate()
+        if sp:
+            # Store authenticated client and user data in session state
+            st.session_state.spotify_client = client
             st.session_state.authenticated = True
-            st.session_state.user_profile = sp.current_user()
+
+            # Get user profile information
+            user = sp.current_user()
+            st.session_state.user_profile = user
+
             return True
-            
-    except Exception as e:
-        st.error(f"Authentication setup failed: {e}")
         return False
-    
-    return False
+    except Exception as e:
+        st.error(f"Authentication failed: {e}")
+        return False
 
 
 def get_user_top_tracks(limit=50):
