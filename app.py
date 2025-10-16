@@ -235,13 +235,6 @@ def show_playlist_approval():
                 else:
                     st.error("Failed to create playlist on Spotify.")
 
-    with col2:
-        if st.button("🔄 Generate New", type="secondary", use_container_width=True):
-            # Clear pending playlist and return to generation interface
-            st.session_state.pending_playlist = None
-            st.session_state.playlist_data = None
-            st.rerun()
-
     with col3:
         if st.button("❌ Cancel", use_container_width=True):
             # Cancel and clear all pending data
